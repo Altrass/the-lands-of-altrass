@@ -1,0 +1,33 @@
+dist: trusty
+language: node_js
+node_js:
+  - "8"
+jobs:
+  include:
+    - stage: unit
+      script: yarn run unit
+      after_success:
+        bash <(curl -s https://codecov.io/bash)
+    - stage: e2e
+      env:
+        - MOZ_HEADLESS=1
+      addons:
+        firefox: latest
+        chrome: stable
+      before_install:
+        - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
+      before_script:
+        - "export DISPLAY=:99.0"
+        - "sh -e /etc/init.d/xvfb start"
+        - sleep 3
+      script: yarn run e2e
+    - stage: deploy
+      script: yarn run build
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        local_dir: dist
+        repo: altrass/the-lands-of-altrass
+        github_token: $GITHUB_TOKEN
+        on:
+          branch: master
